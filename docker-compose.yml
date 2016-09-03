@@ -1,0 +1,61 @@
+version: '2'
+services:
+
+  feeder-1:
+    networks:
+      - rethink-net
+    image: rethinkdb-worker
+    depends_on:
+      - rtdb-proxy1
+      - rtdb-proxy2
+    command: python /usr/local/bin/worker.py -d -r 10 --feeder --hosts=rtdb-proxy1,rtdb-proxy2
+  worker-1:
+    networks:
+      - rethink-net
+    image: rethinkdb-worker
+    depends_on:
+      - rtdb-proxy1
+    command: python /usr/local/bin/worker.py -d -r 4 --hosts=rtdb-proxy1,rtdb-proxy2
+  worker-2:
+    networks:
+      - rethink-net
+    image: rethinkdb-worker
+    depends_on:
+      - rtdb-proxy2
+    command: python /usr/local/bin/worker.py -d -r 4 --hosts=rtdb-proxy1,rtdb-proxy2
+
+
+  rtdb-node1:
+    networks:
+      - rethink-net
+    image: rethinkdb 
+    command: rethinkdb --bind all --server-tag cluster1
+  rtdb-node2:
+    networks:
+      - rethink-net
+    image: rethinkdb 
+    command: rethinkdb --bind all --server-tag cluster1 --join rtdb-node1
+  rtdb-node3:
+    networks:
+      - rethink-net
+    image: rethinkdb 
+    command: rethinkdb --bind all --server-tag cluster1 --join rtdb-node1
+  rtdb-proxy1:
+    networks:
+      - rethink-net
+    image: rethinkdb 
+    command: rethinkdb --bind all --server-tag cluster1 --join rtdb-node1
+    ports:
+        - 8080
+        - 28015
+  rtdb-proxy2:
+    networks:
+      - rethink-net
+    image: rethinkdb 
+    command: rethinkdb --bind all --server-tag cluster1 --join rtdb-node2
+    ports:
+        - 8080
+        - 28015
+networks:
+  rethink-net:
+    driver: bridge
